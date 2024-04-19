@@ -1,13 +1,13 @@
 import fs from "fs";
 import path from "node:path";
 import { createRequire } from 'node:module';
-import { createRsbuild } from "@rsbuild/core";
+import { createRsbuild, logger } from "@rsbuild/core";
 import { loadConfig } from "@rsbuild/core";
 import express from "express";
 
 const require = createRequire(import.meta.url);
 
-export const serverRender = async (_req, res, next) => {
+export const serverRender = (_req, res, _next) => {
   const remotesPath = path.join(process.cwd(), `./dist/server/index.js`);
 
   const importedApp = require(remotesPath);
@@ -63,7 +63,12 @@ async function startDevServer() {
       return next();
     }
 
-    serverRender(req, res, next)
+    try {
+      return serverRender(req, res, next)
+    } catch (err) {
+      logger.error('ssr render error, downgrade to csr...\n', err);
+      next();
+    }
   });
 
   app.use(rsbuildServer.middlewares);
